@@ -2,6 +2,8 @@ from datetime import timedelta
 
 import time
 
+import requests.exceptions
+
 try:
     from .crawlerstats import CrawlerStats
     from .exceptions import NoUrlException
@@ -65,7 +67,8 @@ class Crawler:
         page = Page(
             status_code=request.status_code,
             elapsed=request.elapsed,
-            content=request.content
+            content=request.content,
+            url=url
         )
 
         return page
@@ -75,7 +78,18 @@ class Crawler:
 
         url = self._get_next_url()
 
-        page = self.get_page(url)
+        # Get the page, and update the crawling queue to hold the new links.
+        try:
+            page = self.get_page(url)
+        except requests.exceptions.ConnectionError:
+            self.stats.pages_crawled += 1
+            self.stats.pages_failed += 1
+            return
+
+        if 300 > page.status_code >= 200:
+            self.to_crawl.extend(page.get_links() - self.enqueued)
+        else:
+            print(page.status_code)
 
         # Update statistics.
         total_time = time.time_ns() - start_time
@@ -85,8 +99,7 @@ class Crawler:
 
 
 if __name__ == '__main__':
-    crawler = Crawler(seed_url="https://en.wikipedia.org/wiki/Web_crawler")  # I like irony.
+    crawler = Crawler(seed_url="https://wikipedia.org/wiki/webcrawler")  # I like irony.
 
-    response_page = crawler.step()
-    print(response_page.content.decode())
-    print(crawler.stats.average_crawl_time)
+    while True:
+        crawler.step()
