@@ -37,8 +37,6 @@ class Crawler:
         :param crawler_options: The configuration of the Crawler.
         """
 
-        self.steps: int = 0  # How many step calls have been run.
-
         self.options: BaseCrawlerOptions = crawler_options or DefaultCrawlerOptions()
 
         self.stats = CrawlerStats()
