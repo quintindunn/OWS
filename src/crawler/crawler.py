@@ -30,7 +30,6 @@ except ImportError as e:
     from url_checker import check_url_compliance
 finally:
     from database import db, page_checker
-    page_follows_db_rules = page_checker.page_follows_db_rules
 
 DB_MAX_CONTENT_CHARS = 15000000
 
@@ -64,6 +63,7 @@ class Crawler:
         self.db_session = db.Session()
 
         self.url_compliance_checker = functools.partial(check_url_compliance, self.options)
+        self.page_follows_db_rules = functools.partial(page_checker.page_follows_db_rules, self.options)
 
     def _get_next_url(self) -> str:
         """
@@ -156,7 +156,7 @@ class Crawler:
 
         # Write new page to database:
 
-        if page_follows_db_rules(page):
+        if self.page_follows_db_rules(page):
             logger.info("[DB] Writing page to database")
             page_model = db.PageModel(
                 status_code=page.status_code,
