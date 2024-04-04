@@ -81,7 +81,7 @@ class Crawler:
 
         return page
 
-    def step(self):
+    def step(self) -> Page | None:
         start_time = time.time_ns()
 
         url = self._get_next_url()
