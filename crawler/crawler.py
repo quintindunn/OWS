@@ -11,12 +11,14 @@ try:
     from .requester import Requester
     from .crawleroptions import BaseCrawlerOptions, DefaultCrawlerOptions
     from .page import Page
+    from .robots import does_page_follow_robots_rules
 except ImportError:
     from crawlerstats import CrawlerStats
     from exceptions import NoUrlException
     from requester import Requester
     from crawleroptions import BaseCrawlerOptions, DefaultCrawlerOptions
     from page import Page
+    from robots import does_page_follow_robots_rules
 
 
 logger = logging.getLogger("Crawler")
@@ -62,11 +64,15 @@ class Crawler:
         self.enqueued.add(current_url)
         return current_url
 
-    def get_page(self, url: str) -> Page:
+    def _get_url_robots(self, url: str) -> str:
+        # TODO: Implement getting robots.txt file for a URLs domain.
+        return ""
+
+    def get_page(self, url: str) -> Page | None:
         # Perform any checks.
-        if self.options.follow_robots_txt:
-            # TODO: Implement robots.txt check.
-            ...
+        if self.options.follow_robots_txt and not does_page_follow_robots_rules(url, self._get_url_robots(url)):
+            logger.info("[Robots.txt] Page @ \"{url[:60]}{'...' if len(url) > 60 else ''}\" conflicts with robots.txt")
+            return None
 
         # Get the page.
         request = self.requester.get(url=url)
@@ -95,6 +101,9 @@ class Crawler:
             self.stats.pages_crawled += 1
             self.stats.pages_failed += 1
             return
+
+        if page is None:
+            return None
 
         if 300 > page.status_code >= 200:
             self.to_crawl.extend(page.get_links() - self.enqueued)
