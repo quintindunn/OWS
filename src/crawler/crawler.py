@@ -10,7 +10,7 @@ sys.path.insert(0, "..")
 
 if typing.TYPE_CHECKING:
     # Allow IDE to find correct import.
-    from ..database import db
+    from ..database import db, page_checker
 
 try:
     from .crawlerstats import CrawlerStats
@@ -20,7 +20,6 @@ try:
     from .page import Page
     from .robots import does_page_follow_robots_rules
     from .url_checker import check_url_compliance
-    from database import db
 except ImportError as e:
     from crawlerstats import CrawlerStats
     from exceptions import NoUrlException
@@ -29,6 +28,9 @@ except ImportError as e:
     from page import Page
     from robots import does_page_follow_robots_rules
     from url_checker import check_url_compliance
+finally:
+    from database import db, page_checker
+    page_follows_db_rules = page_checker.page_follows_db_rules
 
 DB_MAX_CONTENT_CHARS = 15000000
 
@@ -104,6 +106,7 @@ class Crawler:
             status_code=request.status_code,
             elapsed=request.elapsed,
             content=request.content,
+            response_headers=request.headers,
             url=url
         )
 
@@ -152,16 +155,19 @@ class Crawler:
         self.stats.update(page=page, elapsed_time=total_time)
 
         # Write new page to database:
-        logger.info("[DB] Writing page to database")
-        page_model = db.PageModel(
-            status_code=page.status_code,
-            elapsed=page.elapsed.total_seconds(),
-            url=page.url,
-            domain=page.domain,
-            title=page.html_title,
-            content=page.content.decode().encode("UTF-8")[:DB_MAX_CONTENT_CHARS]
-        )
-        self.db_session.add(page_model)
-        self.db_session.commit()
 
+        if page_follows_db_rules(page):
+            logger.info("[DB] Writing page to database")
+            page_model = db.PageModel(
+                status_code=page.status_code,
+                elapsed=page.elapsed.total_seconds(),
+                url=page.url,
+                domain=page.domain,
+                title=page.html_title,
+                content=page.content.decode().encode("UTF-8")[:DB_MAX_CONTENT_CHARS]
+            )
+            self.db_session.add(page_model)
+            self.db_session.commit()
+        else:
+            logger.info(f"[DB] \"{url[:60]}{'...' if len(url) > 60 else ''}\" doesn't follow database rules.")
         return page

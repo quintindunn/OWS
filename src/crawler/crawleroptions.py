@@ -10,12 +10,14 @@ class BaseCrawlerOptions:
         self.check_url_ending: bool = True
         self.ignored_url_endings: set[str] = set()
 
+        # Check the content-type from the response headers
+        self.check_content_type: bool = True
+
 
 class DefaultCrawlerOptions(BaseCrawlerOptions):
     def __init__(self):
         super().__init__()
 
-        self.follow_robots_txt: bool = True
         self.ua: str = "OWS-CRAWLER/0.1-DEV (https://github.com/quintindunn/OWS)"
 
         with open("./configs/ignored_file_extensions.txt", 'r') as f:
