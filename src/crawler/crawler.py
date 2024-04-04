@@ -56,6 +56,8 @@ class Crawler:
 
         self.current_url: str | None = None
 
+        self.db_session = db.Session()
+
     def _get_next_url(self) -> str:
         # Check that we haven't crawled everything.
         logger.debug(f"[URLs] {len(self.to_crawl)} URLs left to crawl.")
@@ -119,6 +121,19 @@ class Crawler:
         # Update statistics.
         total_time = time.time_ns() - start_time
         self.stats.update(page=page, elapsed_time=total_time)
+
+        # Write new page to database:
+        logger.info("[DB] Writing page to database")
+        page_model = db.PageModel(
+            status_code=page.status_code,
+            elapsed=page.elapsed.total_seconds(),
+            url=page.url,
+            domain=page.domain,
+            title=page.html_title,
+            content=page.content.decode().encode("UTF-8")
+        )
+        self.db_session.add(page_model)
+        self.db_session.commit()
 
         return page
 

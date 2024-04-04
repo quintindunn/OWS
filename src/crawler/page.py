@@ -1,3 +1,4 @@
+from functools import lru_cache
 from datetime import timedelta
 
 from lxml.html import document_fromstring
@@ -12,22 +13,49 @@ class Page:
         self.content: bytes = content
 
     @property
+    @lru_cache()
     def base_url(self):
         protocol, url = self.url.split("//", 1)
         return f"{protocol}//{url.split('/', 1)[0]}"
 
     @property
+    @lru_cache()
     def url_path(self):
         return self.url.split(self.base_url)[1].split("?", 1)[0]
 
     @property
+    @lru_cache()
     def protocol(self):
         return self.base_url.split(":", 1)[0]
 
+    @property
+    @lru_cache()
+    def domain(self):
+        return self.base_url.split("//")[1]
+
+    @property
+    @lru_cache()
+    def html_title(self) -> str:
+        tree = self.html_tree
+        title_element = tree.find(".//title")
+        if title_element is not None:
+            return title_element.text
+
+        meta_title = tree.xpath("//meta[@name='title']/@content")
+        if meta_title:
+            return meta_title[0]
+
+        return ""
+
+    @property
+    @lru_cache()
+    def html_tree(self):
+        return document_fromstring(self.content)
+
     def get_links(self) -> set[str]:
+        tree = self.html_tree
         results = set()
 
-        tree = document_fromstring(self.content)
         hrefs = set(filter(lambda args: args[1] == "href", tree.iterlinks()))
         links = set(filter(lambda args: args[0].tag == "a", hrefs))
 
