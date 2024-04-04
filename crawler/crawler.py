@@ -1,6 +1,7 @@
-from datetime import timedelta
-
+import sys
 import time
+import logging
+
 
 import requests.exceptions
 
@@ -18,6 +19,9 @@ except ImportError:
     from page import Page
 
 
+logger = logging.getLogger("Crawler")
+
+
 class Crawler:
     def __init__(self, seed_url: str,
                  crawled: set[str] | None = None,
@@ -28,7 +32,10 @@ class Crawler:
         :param seed_url: The URL to seed from.
         :param crawled: A set of pages to ignore as they've been crawled already.
         :param to_crawl: A set of pages to crawl, these shouldn't intersect with crawled.
+        :param crawler_options: The configuration of the Crawler.
         """
+
+        self.steps: int = 0  # How many step calls have been run.
 
         self.options: BaseCrawlerOptions = crawler_options or DefaultCrawlerOptions()
 
@@ -43,6 +50,7 @@ class Crawler:
 
     def _get_next_url(self) -> str:
         # Check that we haven't crawled everything.
+        logger.debug(f"[URLs] {len(self.to_crawl)} URLs left to crawl.")
         if len(self.to_crawl) == 0:
             raise NoUrlException
 
@@ -79,9 +87,11 @@ class Crawler:
         url = self._get_next_url()
 
         # Get the page, and update the crawling queue to hold the new links.
+        logger.info(f"[Crawling] Crawling page \"{url[:60]}{'...' if len(url) > 60 else ''}\"")
         try:
             page = self.get_page(url)
-        except requests.exceptions.ConnectionError:
+        except requests.exceptions.ConnectionError as e:
+            logger.info(f"[Request Error] on page \"{url[:60]}{'...' if len(url) > 60 else ''}\" {e}")
             self.stats.pages_crawled += 1
             self.stats.pages_failed += 1
             return
@@ -89,7 +99,7 @@ class Crawler:
         if 300 > page.status_code >= 200:
             self.to_crawl.extend(page.get_links() - self.enqueued)
         else:
-            print(page.status_code)
+            logger.info(f"[Response] HTTP {page.status_code} @ \"{url[:60]}{'...' if len(url) > 60 else ''}\"")
 
         # Update statistics.
         total_time = time.time_ns() - start_time
@@ -99,7 +109,8 @@ class Crawler:
 
 
 if __name__ == '__main__':
-    crawler = Crawler(seed_url="https://wikipedia.org/wiki/webcrawler")  # I like irony.
+    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
+    crawler = Crawler(seed_url="https://wikipedia.org/wiki/webcrawler")  # I like irony.
     while True:
         crawler.step()
