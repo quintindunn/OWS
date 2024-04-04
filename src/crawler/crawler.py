@@ -1,9 +1,16 @@
 import sys
 import time
 import logging
+import typing
 
 
 import requests.exceptions
+
+sys.path.insert(0, "..")
+
+if typing.TYPE_CHECKING:
+    # Allow IDE to find correct import.
+    from ..database import db
 
 try:
     from .crawlerstats import CrawlerStats
@@ -12,7 +19,8 @@ try:
     from .crawleroptions import BaseCrawlerOptions, DefaultCrawlerOptions
     from .page import Page
     from .robots import does_page_follow_robots_rules
-except ImportError:
+    from database import db
+except ImportError as e:
     from crawlerstats import CrawlerStats
     from exceptions import NoUrlException
     from requester import Requester
