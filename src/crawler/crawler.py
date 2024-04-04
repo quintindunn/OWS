@@ -152,11 +152,3 @@ class Crawler:
         self.db_session.commit()
 
         return page
-
-
-if __name__ == '__main__':
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
-
-    crawler = Crawler(seed_url="https://wikipedia.org/wiki/webcrawler")  # I like irony.
-    while True:
-        crawler.step()
