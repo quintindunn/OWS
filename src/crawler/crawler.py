@@ -2,7 +2,7 @@ import sys
 import time
 import logging
 import typing
-
+import functools
 
 import requests.exceptions
 
@@ -19,6 +19,7 @@ try:
     from .crawleroptions import BaseCrawlerOptions, DefaultCrawlerOptions
     from .page import Page
     from .robots import does_page_follow_robots_rules
+    from .url_checker import check_url_compliance
     from database import db
 except ImportError as e:
     from crawlerstats import CrawlerStats
@@ -27,7 +28,9 @@ except ImportError as e:
     from crawleroptions import BaseCrawlerOptions, DefaultCrawlerOptions
     from page import Page
     from robots import does_page_follow_robots_rules
+    from url_checker import check_url_compliance
 
+DB_MAX_CONTENT_CHARS = 15000000
 
 logger = logging.getLogger("Crawler")
 
@@ -57,6 +60,8 @@ class Crawler:
         self.current_url: str | None = None
 
         self.db_session = db.Session()
+
+        self.url_compliance_checker = functools.partial(check_url_compliance, self.options)
 
     def _get_next_url(self) -> str:
         # Check that we haven't crawled everything.
@@ -104,17 +109,28 @@ class Crawler:
         logger.info(f"[Crawling] Crawling page \"{url[:60]}{'...' if len(url) > 60 else ''}\"")
         try:
             page = self.get_page(url)
+
         except requests.exceptions.ConnectionError as e:
             logger.info(f"[Request Error] on page \"{url[:60]}{'...' if len(url) > 60 else ''}\" {e}")
             self.stats.pages_crawled += 1
             self.stats.pages_failed += 1
-            return
+            return None
+
+        except Exception as e:
+            logger.error(f"[GET PAGE ERROR] {e}")
+            return None
 
         if page is None:
             return None
 
         if 300 > page.status_code >= 200:
-            self.to_crawl.extend(page.get_links() - self.enqueued)
+            passed_urls = set()
+
+            for url in page.get_links():
+                if self.url_compliance_checker(url):
+                    passed_urls.add(url)
+
+            self.to_crawl.extend(passed_urls - self.enqueued)
         else:
             logger.info(f"[Response] HTTP {page.status_code} @ \"{url[:60]}{'...' if len(url) > 60 else ''}\"")
 
@@ -130,7 +146,7 @@ class Crawler:
             url=page.url,
             domain=page.domain,
             title=page.html_title,
-            content=page.content.decode().encode("UTF-8")
+            content=page.content.decode().encode("UTF-8")[:DB_MAX_CONTENT_CHARS]
         )
         self.db_session.add(page_model)
         self.db_session.commit()
