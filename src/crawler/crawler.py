@@ -52,7 +52,7 @@ class Crawler:
         # Check that we haven't crawled everything.
         logger.debug(f"[URLs] {len(self.to_crawl)} URLs left to crawl.")
         if len(self.to_crawl) == 0:
-            raise NoUrlException
+            raise NoUrlException()
 
         current_url = self.to_crawl.pop()
 
