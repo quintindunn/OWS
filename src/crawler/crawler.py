@@ -64,6 +64,10 @@ class Crawler:
         self.url_compliance_checker = functools.partial(check_url_compliance, self.options)
 
     def _get_next_url(self) -> str:
+        """
+        Gets the next URL to crawl and updates Crawler.enqueued.
+        :return: Next URL to crawl.
+        """
         # Check that we haven't crawled everything.
         logger.debug(f"[URLs] {len(self.to_crawl)} URLs left to crawl.")
         if len(self.to_crawl) == 0:
@@ -82,9 +86,14 @@ class Crawler:
         return ""
 
     def get_page(self, url: str) -> Page | None:
+        """
+        Gets a page from the server.
+        :param url: URL to the webpage.
+        :return: Page or None if there was an error.
+        """
         # Perform any checks.
         if self.options.follow_robots_txt and not does_page_follow_robots_rules(url, self._get_url_robots(url)):
-            logger.info("[Robots.txt] Page @ \"{url[:60]}{'...' if len(url) > 60 else ''}\" conflicts with robots.txt")
+            logger.info(f"[Robots.txt] Page @ \"{url[:60]}{'...' if len(url) > 60 else ''}\" conflicts with robots.txt")
             return None
 
         # Get the page.
@@ -101,6 +110,10 @@ class Crawler:
         return page
 
     def step(self) -> Page | None:
+        """
+        Steps through an iteration of the crawler.
+        """
+
         start_time = time.time_ns()
 
         url = self._get_next_url()

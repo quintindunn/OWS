@@ -15,9 +15,19 @@ class CrawlerStats:
 
     @property
     def average_crawl_time(self) -> float:
+        """
+        Gets the average time for the crawler to crawl a page.
+        :return: A float of the average time to crawl a page.
+        """
         return self.total_crawl_time / self.pages_crawled
 
     def update(self, page: Page, elapsed_time: int) -> None:
+        """
+        Updates the CrawlerStats object with the new time for the page.
+        :param page: Page object containing relevant information about that crawler step.
+        :param elapsed_time: Time for the crawler to process the page.
+        :return: None
+        """
         self.pages_crawled += 1
         okay = page.status_code < 300
 

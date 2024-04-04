@@ -14,6 +14,7 @@ class BaseCrawlerOptions:
 class DefaultCrawlerOptions(BaseCrawlerOptions):
     def __init__(self):
         super().__init__()
+
         self.follow_robots_txt: bool = True
         self.ua: str = "OWS-CRAWLER/0.1-DEV (https://github.com/quintindunn/OWS)"
 

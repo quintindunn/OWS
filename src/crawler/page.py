@@ -14,28 +14,57 @@ class Page:
 
     @property
     @lru_cache()
-    def base_url(self):
+    def base_url(self) -> str:
+        """
+        Gets the base URL for the page.
+        i.e.: https://example.com/something/here -> https://example.com
+        :return: The base URL for the page.
+        """
+
         protocol, url = self.url.split("//", 1)
         return f"{protocol}//{url.split('/', 1)[0]}"
 
     @property
     @lru_cache()
-    def url_path(self):
+    def url_path(self) -> str:
+        """
+        Returns the path for the URL.
+        i.e.: https://example.com/something/here -> /something/here
+        :return: The URLs path
+        """
+
         return self.url.split(self.base_url)[1].split("?", 1)[0]
 
     @property
     @lru_cache()
-    def protocol(self):
+    def protocol(self) -> str:
+        """
+        Returns the HTTP protocol for the URL.
+        i.e.: https://example.com/something/here -> https
+        :return: The HTTP protocol.
+        """
+
         return self.base_url.split(":", 1)[0]
 
     @property
     @lru_cache()
-    def domain(self):
+    def domain(self) -> str:
+        """
+        Returns the domain for the URL.
+        i.e.: https://example.com/something/here -> example.com
+        :return: The domain for the URL.
+        """
+
         return self.base_url.split("//")[1]
 
     @property
     @lru_cache()
     def html_title(self) -> str:
+        """
+        Gets the page's title from the HTML from either a title tag or meta tag in that order.
+        :return: The page's title.
+        """
+
         tree = self.html_tree
         title_element = tree.find(".//title")
         if title_element is not None:
@@ -49,10 +78,20 @@ class Page:
 
     @property
     @lru_cache()
-    def html_tree(self):
+    def html_tree(self) -> document_fromstring:
+        """
+        Gets the LXML html tree.
+        :return: LXML html tree.
+        """
+
         return document_fromstring(self.content)
 
     def get_links(self) -> set[str]:
+        """
+        Gets all the href links from anchor tags from the HTML of the webpage.
+        :return: A set of strings with the URLs.
+        """
+
         tree = self.html_tree
         results = set()
 

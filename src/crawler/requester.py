@@ -14,6 +14,14 @@ class Requester:
         }
 
     def get(self, url: str, *args, headers: dict | None = None, **kwargs) -> requests.Response:
+        """
+        Makes a GET request to the given URL but passes the base headers into the request.
+        :param url: URL to make the request to.
+        :param args: args for requests.get(*args)
+        :param headers: Headers to append to the base headers.
+        :param kwargs: kwargs for requests.get(*args, **kwargs)
+        :return: requests.Response object.
+        """
         # Build the headers used in the request.
         local_headers = self.base_headers.copy()
         headers = headers or dict()

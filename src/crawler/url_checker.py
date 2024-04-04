@@ -5,6 +5,12 @@ except ImportError as e:
 
 
 def check_url_compliance(crawler_options: BaseCrawlerOptions, url: str) -> bool:
+    """
+    Checks if the URL given complies with all rules.
+    :param crawler_options: Options for the crawler.
+    :param url: URL to check.
+    :return: True if the URL complies with rules, otherwise False.
+    """
     # Check file ending
     segments = url.replace("//", "/").split("/")
 
