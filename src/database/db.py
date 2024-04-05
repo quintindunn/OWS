@@ -30,6 +30,14 @@ class PageModel(Base):
     content = Column(Text)
 
 
+class DomainModel(Base):
+    __tablename__ = 'domains'
+
+    id = Column(Integer, primary_key=True)
+    domain = Column(String)
+    robots = Column(String)
+
+
 Base.metadata.create_all(engine)
 
 Session = sessionmaker(bind=engine)
