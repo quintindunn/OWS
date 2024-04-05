@@ -9,6 +9,7 @@ except ImportError as e:
 def does_page_follow_robots_rules(crawler_options: BaseCrawlerOptions, url: str, robots: str) -> bool:
     parser = robotparser.RobotFileParser()
     parser.parse(robots.splitlines())
-    parser.can_fetch(useragent=crawler_options.ua, url=url)
 
-    return True
+    url_allowed = parser.can_fetch(useragent=crawler_options.ua, url=url)
+    # TODO: add more checks for things such as if the page is crawled too often.
+    return url_allowed

@@ -132,6 +132,7 @@ class Crawler:
             return None
 
         # Get the page.
+        # TODO: Make requests get read using a stream and after they exceed X bytes cut them off.
         request = self.requester.get(url=url)
 
         if request.content == b'':
