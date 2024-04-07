@@ -37,6 +37,8 @@ class DomainModel(Base):
     domain = Column(String)
     robots = Column(String)
 
+    last_crawled = Column(DateTime)
+
 
 Base.metadata.create_all(engine)
 

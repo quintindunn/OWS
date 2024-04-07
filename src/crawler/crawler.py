@@ -1,3 +1,5 @@
+import datetime
+
 from sqlalchemy import func
 
 import sys
@@ -16,7 +18,7 @@ if typing.TYPE_CHECKING:
 
 try:
     from .crawlerstats import CrawlerStats
-    from .exceptions import NoUrlException
+    from .exceptions import NoUrlException, WaitBeforeRetryException
     from .requester import Requester
     from .crawleroptions import BaseCrawlerOptions, DefaultCrawlerOptions
     from .page import Page
@@ -24,7 +26,7 @@ try:
     from .url_checker import check_url_compliance
 except ImportError as e:
     from crawlerstats import CrawlerStats
-    from exceptions import NoUrlException
+    from exceptions import NoUrlException, WaitBeforeRetryException
     from requester import Requester
     from crawleroptions import BaseCrawlerOptions, DefaultCrawlerOptions
     from page import Page
@@ -97,6 +99,13 @@ class Crawler:
         return robots_txt_request.text
 
     @functools.lru_cache(maxsize=1024)
+    def get_domain(self, domain: str) -> db.DomainModel:
+        domain_model = self.db_session.query(db.DomainModel).filter(
+            func.lower(db.DomainModel.domain) == domain
+        ).first()
+        return domain_model
+
+    @functools.lru_cache(maxsize=1024)
     def get_robots_txt(self, domain):
         domain_model = self.db_session.query(db.DomainModel).filter(
             func.lower(db.DomainModel.domain) == domain
@@ -126,10 +135,19 @@ class Crawler:
         protocol, _url = url.split("//", 1)
         domain = _url.split("/", 1)[0]
 
-        if self.options.follow_robots_txt and not does_page_follow_robots_rules(
-                self.options, url, self.get_robots_txt(domain)):
-            logger.info(f"[Robots.txt] Page @ \"{url[:60]}{'...' if len(url) > 60 else ''}\" conflicts with robots.txt")
-            return None
+        domain_model = self.get_domain(domain)
+
+        logger_url_str = f"\"{url[:60]}{'...' if len(url) > 60 else ''}\""
+
+        try:
+            if self.options.follow_robots_txt and not does_page_follow_robots_rules(
+                    self.options, url, self.get_robots_txt(domain), domain=domain_model):
+                logger.info(f"[Robots.txt] Page @ {logger_url_str} conflicts with robots.txt")
+                return None
+        except WaitBeforeRetryException:
+            self.to_crawl.append(url)
+            self.enqueued.remove(url)
+            logger.info(f"[Robots.txt] Cannot crawl {logger_url_str} as it was crawled too recently.")
 
         # Get the page.
         # TODO: Make requests get read using a stream and after they exceed X bytes cut them off.
@@ -146,6 +164,10 @@ class Crawler:
             response_headers=request.headers,
             url=url
         )
+
+        if domain_model:
+            domain_model.last_crawled = datetime.datetime.now()
+            self.db_session.commit()
 
         return page
 
