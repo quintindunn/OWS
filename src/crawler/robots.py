@@ -30,10 +30,6 @@ def does_page_follow_robots_rules(crawler_options: BaseCrawlerOptions, url: str,
         crawl_delay = parser.crawl_delay(crawler_options.ua)
         request_delay = parser.request_rate(crawler_options.ua)
 
-        if crawl_delay or request_delay:
-            print("\n"*10)
-            print(crawl_delay, request_delay, request_delay.seconds)
-
         now = datetime.datetime.now()
         if crawl_delay and (now - domain.last_crawled).total_seconds() < int(crawl_delay):
             raise WaitBeforeRetryException()

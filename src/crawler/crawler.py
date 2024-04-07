@@ -1,4 +1,5 @@
 import datetime
+import random
 
 from sqlalchemy import func
 
@@ -79,7 +80,8 @@ class Crawler:
         if len(self.to_crawl) == 0:
             raise NoUrlException()
 
-        current_url = self.to_crawl.pop()
+        random_idx = random.randint(0, len(self.to_crawl)-1)
+        current_url = self.to_crawl.pop(random_idx)
 
         if current_url is None:
             raise NoUrlException()
