@@ -9,7 +9,7 @@ import os
 if not os.path.isdir("./dbs/"):
     os.mkdir("./dbs/")
 
-engine = create_engine('sqlite:///database/dbs/pages.db')
+engine = create_engine('sqlite:///dbs/pages.db')
 
 Base = declarative_base()
 
