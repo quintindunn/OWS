@@ -1,5 +1,4 @@
 import datetime
-import random
 
 from sqlalchemy import func
 
@@ -13,28 +12,20 @@ import requests.exceptions
 
 sys.path.insert(0, "..")
 
+from .crawlerstats import CrawlerStats  # noqa
+from .exceptions import NoUrlException, WaitBeforeRetryException  # noqa
+from .requester import Requester  # noqa
+from .crawleroptions import BaseCrawlerOptions, DefaultCrawlerOptions  # noqa
+from .page import Page  # noqa
+from .robots import does_page_follow_robots_rules  # noqa
+from .url_checker import check_url_compliance  # noqa
+from .urls import URLManager  # noqa
+
+from database import db, page_checker  # noqa (Ignore import error)
+
 if typing.TYPE_CHECKING:
     # Allow IDE to find correct import.
     from ..database import db, page_checker
-
-try:
-    from .crawlerstats import CrawlerStats
-    from .exceptions import NoUrlException, WaitBeforeRetryException
-    from .requester import Requester
-    from .crawleroptions import BaseCrawlerOptions, DefaultCrawlerOptions
-    from .page import Page
-    from .robots import does_page_follow_robots_rules
-    from .url_checker import check_url_compliance
-except ImportError as e:
-    from crawlerstats import CrawlerStats
-    from exceptions import NoUrlException, WaitBeforeRetryException
-    from requester import Requester
-    from crawleroptions import BaseCrawlerOptions, DefaultCrawlerOptions
-    from page import Page
-    from robots import does_page_follow_robots_rules
-    from url_checker import check_url_compliance
-finally:
-    from database import db, page_checker
 
 DB_MAX_CONTENT_CHARS = 15000000
 
@@ -42,11 +33,13 @@ logger = logging.getLogger("Crawler")
 
 
 class Crawler:
-    def __init__(self, seed_url: str,
-                 crawled: set[str] | None = None,
-                 to_crawl: set[str] | None = None,
-                 crawler_options: BaseCrawlerOptions | None = None
-                 ):
+    def __init__(
+        self,
+        seed_url: str,
+        crawled: set[str] | None = None,
+        to_crawl: dict[str, list[str]] | None = None,
+        crawler_options: BaseCrawlerOptions | None = None,
+    ):
         """
         :param seed_url: The URL to seed from.
         :param crawled: A set of pages to ignore as they've been crawled already.
@@ -59,40 +52,25 @@ class Crawler:
         self.stats = CrawlerStats()
         self.requester = Requester(crawler_options=self.options)
 
-        self.seed_url: str | None = seed_url or None
-        self.enqueued: set[str] = crawled or set()  # For all URLs that have been crawled or are already queued to crawl
-        self.to_crawl: list[str] = list(to_crawl or [seed_url])
+        self.url_manager = URLManager(
+            seed_url=seed_url, crawled=crawled, to_crawl=to_crawl
+        )
 
         self.current_url: str | None = None
 
         self.db_session = db.Session()
 
-        self.url_compliance_checker = functools.partial(check_url_compliance, self.options)
-        self.page_follows_db_rules = functools.partial(page_checker.page_follows_db_rules, self.options)
-
-    def _get_next_url(self) -> str:
-        """
-        Gets the next URL to crawl and updates Crawler.enqueued.
-        :return: Next URL to crawl.
-        """
-        # Check that we haven't crawled everything.
-        logger.debug(f"[URLs] {len(self.to_crawl)} URLs left to crawl.")
-        if len(self.to_crawl) == 0:
-            raise NoUrlException()
-
-        random_idx = random.randint(0, len(self.to_crawl)-1)
-        current_url = self.to_crawl.pop(random_idx)
-
-        if current_url is None:
-            raise NoUrlException()
-
-        self.enqueued.add(current_url)
-        return current_url
+        self.url_compliance_checker = functools.partial(
+            check_url_compliance, self.options
+        )
+        self.page_follows_db_rules = functools.partial(
+            page_checker.page_follows_db_rules, self.options
+        )
 
     def get_domain_robots(self, domain: str, protocol: str) -> str:
         protocol = protocol + (":" if not protocol[-1] == ":" else "")
         robots_txt_url = f"{protocol}//{domain}/robots.txt"
-        logger.info(f"[Robots] Getting \"{domain}\"'s robots.txt.")
+        logger.info(f'[Robots] Getting "{domain}"\'s robots.txt.')
         robots_txt_request = self.requester.get(robots_txt_url, is_robots=True)
 
         if robots_txt_request.status_code == 404:
@@ -102,22 +80,25 @@ class Crawler:
 
     @functools.lru_cache(maxsize=1024)
     def get_domain(self, domain: str) -> db.DomainModel:
-        domain_model = self.db_session.query(db.DomainModel).filter(
-            func.lower(db.DomainModel.domain) == domain
-        ).first()
+        domain_model = (
+            self.db_session.query(db.DomainModel)
+            .filter(func.lower(db.DomainModel.domain) == domain)
+            .first()
+        )
         return domain_model
 
     @functools.lru_cache(maxsize=1024)
     def get_robots_txt(self, domain):
-        domain_model = self.db_session.query(db.DomainModel).filter(
-            func.lower(db.DomainModel.domain) == domain
-        ).first()
+        domain_model = (
+            self.db_session.query(db.DomainModel)
+            .filter(func.lower(db.DomainModel.domain) == domain)
+            .first()
+        )
 
         if not domain_model:
             try:
                 domain_model = db.DomainModel(
-                    domain=domain,
-                    robots=self.get_domain_robots(domain, "http")
+                    domain=domain, robots=self.get_domain_robots(domain, "http")
                 )
                 self.db_session.add(domain_model)
                 self.db_session.commit()
@@ -143,18 +124,24 @@ class Crawler:
 
         try:
             if self.options.follow_robots_txt and not does_page_follow_robots_rules(
-                    self.options, url, self.get_robots_txt(domain), domain=domain_model):
-                logger.info(f"[Robots.txt] Page @ {logger_url_str} conflicts with robots.txt")
+                self.options, url, self.get_robots_txt(domain), domain=domain_model
+            ):
+                logger.info(
+                    f"[Robots.txt] Page @ {logger_url_str} conflicts with robots.txt"
+                )
                 return None
         except WaitBeforeRetryException:
-            self.to_crawl.append(url)
-            self.enqueued.remove(url)
-            logger.info(f"[Robots.txt] Cannot crawl {logger_url_str} as it was crawled too recently.")
+            self.url_manager.add_to_to_crawl_queue(url, domain)
+            logger.info(
+                f"[Robots.txt] Cannot crawl {logger_url_str} as it was crawled too recently."
+            )
 
         # Get the page.
-        request = self.requester.get(url=url, stream=True, timeout=self.options.page_timeout)
+        request = self.requester.get(
+            url=url, stream=True, timeout=self.options.page_timeout
+        )
 
-        content = b''
+        content = b""
 
         max_bytes = self.options.max_page_size
         chunk_size = self.options.content_buffer_size
@@ -166,7 +153,7 @@ class Crawler:
             if total_bytes >= max_bytes:
                 break
 
-        if content == b'':
+        if content == b"":
             return None
 
         # Do some basic parsing.
@@ -175,7 +162,7 @@ class Crawler:
             elapsed=request.elapsed,
             content=content,
             response_headers=request.headers,
-            url=url
+            url=url,
         )
 
         if domain_model:
@@ -191,21 +178,22 @@ class Crawler:
         try:
             start_time = time.time_ns()
 
-            url = self._get_next_url()
+            url = self.url_manager.get_next_url()
 
             # Check if domain is in domain table.
             protocol, _url = url.split("//", 1)
             domain = _url.split("/", 1)[0]
 
-            domain_model = self.db_session.query(db.DomainModel).filter(
-                func.lower(db.DomainModel.domain) == domain
-            ).all()
+            domain_model = (
+                self.db_session.query(db.DomainModel)
+                .filter(func.lower(db.DomainModel.domain) == domain)
+                .all()
+            )
 
             if not domain_model:
                 try:
                     domain_model = db.DomainModel(
-                        domain=domain,
-                        robots=self.get_domain_robots(domain, protocol)
+                        domain=domain, robots=self.get_domain_robots(domain, protocol)
                     )
                     self.db_session.add(domain_model)
                     self.db_session.commit()
@@ -213,12 +201,16 @@ class Crawler:
                     pass
 
             # Get the page, and update the crawling queue to hold the new links.
-            logger.info(f"[Crawling] Crawling page \"{url[:60]}{'...' if len(url) > 60 else ''}\"")
+            logger.info(
+                f"[Crawling] Crawling page \"{url[:60]}{'...' if len(url) > 60 else ''}\""
+            )
             try:
                 page = self.get_page(url)
 
             except requests.exceptions.ConnectionError as e:
-                logger.info(f"[Request Error] on page \"{url[:60]}{'...' if len(url) > 60 else ''}\" {e}")
+                logger.info(
+                    f"[Request Error] on page \"{url[:60]}{'...' if len(url) > 60 else ''}\" {e}"
+                )
                 self.stats.pages_crawled += 1
                 self.stats.pages_failed += 1
                 return None
@@ -237,9 +229,12 @@ class Crawler:
                     if self.url_compliance_checker(url):
                         passed_urls.add(url)
 
-                self.to_crawl.extend(passed_urls - self.enqueued)
+                self.url_manager.add_many_to_to_crawl_queue(passed_urls)
+
             else:
-                logger.info(f"[Response] HTTP {page.status_code} @ \"{url[:60]}{'...' if len(url) > 60 else ''}\"")
+                logger.info(
+                    f"[Response] HTTP {page.status_code} @ \"{url[:60]}{'...' if len(url) > 60 else ''}\""
+                )
 
             # Update statistics.
             total_time = time.time_ns() - start_time
@@ -255,14 +250,18 @@ class Crawler:
                     url=page.url,
                     domain=page.domain,
                     title=page.html_title,
-                    content=page.content.decode().encode("UTF-8")[:DB_MAX_CONTENT_CHARS]
+                    content=page.content.decode().encode("UTF-8")[
+                        :DB_MAX_CONTENT_CHARS
+                    ],
                 )
                 self.db_session.add(page_model)
 
                 # Save to db.
                 self.db_session.commit()
             else:
-                logger.info(f"[DB] \"{url[:60]}{'...' if len(url) > 60 else ''}\" doesn't follow database rules.")
+                logger.info(
+                    f"[DB] \"{url[:60]}{'...' if len(url) > 60 else ''}\" doesn't follow database rules."
+                )
             return page
         except NoUrlException as e:
             raise e

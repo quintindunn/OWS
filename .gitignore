@@ -160,5 +160,5 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-src/database/dbs/*
+src/dbs/pages.db
 to_crawl.json

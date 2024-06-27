@@ -32,6 +32,6 @@ class DefaultCrawlerOptions(BaseCrawlerOptions):
 
         self.ua: str = "OWS-CRAWLER/0.1-DEV (https://github.com/quintindunn/OWS)"
 
-        with open("./configs/ignored_file_extensions.txt", 'r') as f:
+        with open("./configs/ignored_file_extensions.txt", "r") as f:
             extensions = f.readlines()[1:]
         self.ignored_url_endings = set(extensions)
