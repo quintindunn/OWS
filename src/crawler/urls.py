@@ -7,11 +7,16 @@ import random
 
 
 class URLManager:
-    def __init__(self, seed_url: str,
-                 crawled: set[str] | None = None,
-                 to_crawl: dict[str, list[str]] | None = None):
+    def __init__(
+        self,
+        seed_url: str,
+        crawled: set[str] | None = None,
+        to_crawl: dict[str, list[str]] | None = None,
+    ):
         self.seed_url: str | None = seed_url or None
-        self.enqueued: set[str] = crawled or set()  # For all URLs that have been crawled or are already queued to crawl
+        self.enqueued: set[str] = (
+            crawled or set()
+        )  # For all URLs that have been crawled or are already queued to crawl
         self.to_crawl: dict[str, list[str]] = dict()
 
         self.url_count = 0

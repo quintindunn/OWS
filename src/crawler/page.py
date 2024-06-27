@@ -7,8 +7,14 @@ from requests.utils import CaseInsensitiveDict
 
 
 class Page:
-    def __init__(self, status_code: int, elapsed: timedelta, content: bytes, url: str,
-                 response_headers: CaseInsensitiveDict[str]):
+    def __init__(
+        self,
+        status_code: int,
+        elapsed: timedelta,
+        content: bytes,
+        url: str,
+        response_headers: CaseInsensitiveDict[str],
+    ):
         self.status_code: int = status_code
         self.elapsed = elapsed
         self.url = url

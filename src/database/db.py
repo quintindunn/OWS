@@ -9,13 +9,13 @@ import os
 if not os.path.isdir("./dbs/"):
     os.mkdir("./dbs/")
 
-engine = create_engine('sqlite:///dbs/pages.db')
+engine = create_engine("sqlite:///dbs/pages.db")
 
 Base = declarative_base()
 
 
 class PageModel(Base):
-    __tablename__ = 'pages'
+    __tablename__ = "pages"
 
     id = Column(Integer, primary_key=True)
 
@@ -31,7 +31,7 @@ class PageModel(Base):
 
 
 class DomainModel(Base):
-    __tablename__ = 'domains'
+    __tablename__ = "domains"
 
     id = Column(Integer, primary_key=True)
     domain = Column(String)

@@ -18,8 +18,9 @@ except ImportError as e:
     from exceptions import WaitBeforeRetryException
 
 
-def does_page_follow_robots_rules(crawler_options: BaseCrawlerOptions, url: str, robots: str,
-                                  domain: "db.DomainModel") -> bool:
+def does_page_follow_robots_rules(
+    crawler_options: BaseCrawlerOptions, url: str, robots: str, domain: "db.DomainModel"
+) -> bool:
     parser = robotparser.RobotFileParser()
     parser.parse(robots.splitlines())
 
@@ -31,10 +32,14 @@ def does_page_follow_robots_rules(crawler_options: BaseCrawlerOptions, url: str,
         request_delay = parser.request_rate(crawler_options.ua)
 
         now = datetime.datetime.now()
-        if crawl_delay and (now - domain.last_crawled).total_seconds() < int(crawl_delay):
+        if crawl_delay and (now - domain.last_crawled).total_seconds() < int(
+            crawl_delay
+        ):
             raise WaitBeforeRetryException()
 
-        if request_delay and (now - domain.last_crawled).total_seconds() < int(request_delay.seconds):
+        if request_delay and (now - domain.last_crawled).total_seconds() < int(
+            request_delay.seconds
+        ):
             raise WaitBeforeRetryException()
     except ValueError:
         pass
