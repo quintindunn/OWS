@@ -44,7 +44,7 @@ logger = logging.getLogger("Crawler")
 class Crawler:
     def __init__(self, seed_url: str,
                  crawled: set[str] | None = None,
-                 to_crawl: set[str] | None = None,
+                 to_crawl: dict[str, list[str]] | None = None,
                  crawler_options: BaseCrawlerOptions | None = None
                  ):
         """
@@ -61,7 +61,15 @@ class Crawler:
 
         self.seed_url: str | None = seed_url or None
         self.enqueued: set[str] = crawled or set()  # For all URLs that have been crawled or are already queued to crawl
-        self.to_crawl: list[str] = list(to_crawl or [seed_url])
+
+        self.to_crawl: dict[str, list[str]] = dict()
+
+        if to_crawl:
+            self.to_crawl = to_crawl
+        else:
+            protocol, _url = seed_url.split("//", 1)
+            domain = _url.split("/", 1)[0]
+            self.to_crawl[domain] = [seed_url]
 
         self.current_url: str | None = None
 
@@ -76,12 +84,16 @@ class Crawler:
         :return: Next URL to crawl.
         """
         # Check that we haven't crawled everything.
-        logger.debug(f"[URLs] {len(self.to_crawl)} URLs left to crawl.")
         if len(self.to_crawl) == 0:
             raise NoUrlException()
 
-        random_idx = random.randint(0, len(self.to_crawl)-1)
-        current_url = self.to_crawl.pop(random_idx)
+        domain_choice = random.choice(list(self.to_crawl.keys()))
+        current_url = random.choice(self.to_crawl[domain_choice])
+
+        self.to_crawl[domain_choice].remove(current_url)
+
+        if len(self.to_crawl[domain_choice]) == 0:
+            del self.to_crawl[domain_choice]
 
         if current_url is None:
             raise NoUrlException()
@@ -147,7 +159,11 @@ class Crawler:
                 logger.info(f"[Robots.txt] Page @ {logger_url_str} conflicts with robots.txt")
                 return None
         except WaitBeforeRetryException:
-            self.to_crawl.append(url)
+            if domain in self.to_crawl.keys():
+                self.to_crawl[domain].append(url)
+            else:
+                self.to_crawl[domain] = [url]
+
             self.enqueued.remove(url)
             logger.info(f"[Robots.txt] Cannot crawl {logger_url_str} as it was crawled too recently.")
 
@@ -237,7 +253,17 @@ class Crawler:
                     if self.url_compliance_checker(url):
                         passed_urls.add(url)
 
-                self.to_crawl.extend(passed_urls - self.enqueued)
+                urls_to_add = passed_urls - self.enqueued
+
+                for url in urls_to_add:
+                    protocol, _url = url.split("//", 1)
+                    domain = _url.split("/", 1)[0]
+
+                    if domain in self.to_crawl.keys():
+                        self.to_crawl[domain].append(url)
+                    else:
+                        self.to_crawl[domain] = [url]
+
             else:
                 logger.info(f"[Response] HTTP {page.status_code} @ \"{url[:60]}{'...' if len(url) > 60 else ''}\"")
 

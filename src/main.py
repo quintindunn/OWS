@@ -8,7 +8,7 @@ import logging
 import sys
 
 if __name__ == '__main__':
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
     with open("seeds.txt", 'r') as f:
         seeds = [i.strip() for i in f.readlines()]
@@ -20,7 +20,7 @@ if __name__ == '__main__':
             to_crawl = json.load(f)
             crawler = Crawler(seed_url=seed_url, to_crawl=to_crawl)
     else:
-        crawler = Crawler(seed_url=seed_url, to_crawl=set(seeds))
+        crawler = Crawler(seed_url=seed_url)
     try:
         while True:
             crawler.step()
