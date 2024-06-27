@@ -8,7 +8,7 @@ import logging
 import sys
 
 if __name__ == '__main__':
-    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
     with open("seeds.txt", 'r') as f:
         seeds = [i.strip() for i in f.readlines()]
@@ -27,7 +27,7 @@ if __name__ == '__main__':
     except KeyboardInterrupt as e:
         pass
 
-    to_crawl = crawler.to_crawl
+    to_crawl = crawler.url_manager.to_crawl
 
     with open("to_crawl.json", 'w') as f:
         json.dump(to_crawl, f)

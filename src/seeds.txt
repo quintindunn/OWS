@@ -21,7 +21,6 @@ https://vk.com
 https://ws.arin.net
 https://www.lacnic.net
 https://www.archixl.nl
-https://archive.org
 https://www.philafound.org
 https://ncim-stage.nci.nih.gov
 https://www.businesswire.com
@@ -39,7 +38,6 @@ https://jobs.apple.com
 https://secure.store.apple.com
 https://locate.apple.com
 https://apps.apple.com
-https://support.2k.com
 https://training.apple.com
 https://icq.icloud.com
 https://discussions.apple.com

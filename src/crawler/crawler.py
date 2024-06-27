@@ -1,5 +1,4 @@
 import datetime
-import random
 
 from sqlalchemy import func
 
@@ -13,28 +12,20 @@ import requests.exceptions
 
 sys.path.insert(0, "..")
 
+from .crawlerstats import CrawlerStats # noqa
+from .exceptions import NoUrlException, WaitBeforeRetryException # noqa
+from .requester import Requester # noqa
+from .crawleroptions import BaseCrawlerOptions, DefaultCrawlerOptions # noqa
+from .page import Page # noqa
+from .robots import does_page_follow_robots_rules # noqa
+from .url_checker import check_url_compliance # noqa
+from .urls import URLManager # noqa
+
+from database import db, page_checker  # noqa (Ignore import error)
+
 if typing.TYPE_CHECKING:
     # Allow IDE to find correct import.
     from ..database import db, page_checker
-
-try:
-    from .crawlerstats import CrawlerStats
-    from .exceptions import NoUrlException, WaitBeforeRetryException
-    from .requester import Requester
-    from .crawleroptions import BaseCrawlerOptions, DefaultCrawlerOptions
-    from .page import Page
-    from .robots import does_page_follow_robots_rules
-    from .url_checker import check_url_compliance
-except ImportError as e:
-    from crawlerstats import CrawlerStats
-    from exceptions import NoUrlException, WaitBeforeRetryException
-    from requester import Requester
-    from crawleroptions import BaseCrawlerOptions, DefaultCrawlerOptions
-    from page import Page
-    from robots import does_page_follow_robots_rules
-    from url_checker import check_url_compliance
-finally:
-    from database import db, page_checker
 
 DB_MAX_CONTENT_CHARS = 15000000
 
@@ -59,17 +50,7 @@ class Crawler:
         self.stats = CrawlerStats()
         self.requester = Requester(crawler_options=self.options)
 
-        self.seed_url: str | None = seed_url or None
-        self.enqueued: set[str] = crawled or set()  # For all URLs that have been crawled or are already queued to crawl
-
-        self.to_crawl: dict[str, list[str]] = dict()
-
-        if to_crawl:
-            self.to_crawl = to_crawl
-        else:
-            protocol, _url = seed_url.split("//", 1)
-            domain = _url.split("/", 1)[0]
-            self.to_crawl[domain] = [seed_url]
+        self.url_manager = URLManager(seed_url=seed_url, crawled=crawled, to_crawl=to_crawl)
 
         self.current_url: str | None = None
 
@@ -77,29 +58,6 @@ class Crawler:
 
         self.url_compliance_checker = functools.partial(check_url_compliance, self.options)
         self.page_follows_db_rules = functools.partial(page_checker.page_follows_db_rules, self.options)
-
-    def _get_next_url(self) -> str:
-        """
-        Gets the next URL to crawl and updates Crawler.enqueued.
-        :return: Next URL to crawl.
-        """
-        # Check that we haven't crawled everything.
-        if len(self.to_crawl) == 0:
-            raise NoUrlException()
-
-        domain_choice = random.choice(list(self.to_crawl.keys()))
-        current_url = random.choice(self.to_crawl[domain_choice])
-
-        self.to_crawl[domain_choice].remove(current_url)
-
-        if len(self.to_crawl[domain_choice]) == 0:
-            del self.to_crawl[domain_choice]
-
-        if current_url is None:
-            raise NoUrlException()
-
-        self.enqueued.add(current_url)
-        return current_url
 
     def get_domain_robots(self, domain: str, protocol: str) -> str:
         protocol = protocol + (":" if not protocol[-1] == ":" else "")
@@ -159,12 +117,7 @@ class Crawler:
                 logger.info(f"[Robots.txt] Page @ {logger_url_str} conflicts with robots.txt")
                 return None
         except WaitBeforeRetryException:
-            if domain in self.to_crawl.keys():
-                self.to_crawl[domain].append(url)
-            else:
-                self.to_crawl[domain] = [url]
-
-            self.enqueued.remove(url)
+            self.url_manager.add_to_to_crawl_queue(url, domain)
             logger.info(f"[Robots.txt] Cannot crawl {logger_url_str} as it was crawled too recently.")
 
         # Get the page.
@@ -207,7 +160,7 @@ class Crawler:
         try:
             start_time = time.time_ns()
 
-            url = self._get_next_url()
+            url = self.url_manager.get_next_url()
 
             # Check if domain is in domain table.
             protocol, _url = url.split("//", 1)
@@ -253,16 +206,7 @@ class Crawler:
                     if self.url_compliance_checker(url):
                         passed_urls.add(url)
 
-                urls_to_add = passed_urls - self.enqueued
-
-                for url in urls_to_add:
-                    protocol, _url = url.split("//", 1)
-                    domain = _url.split("/", 1)[0]
-
-                    if domain in self.to_crawl.keys():
-                        self.to_crawl[domain].append(url)
-                    else:
-                        self.to_crawl[domain] = [url]
+                self.url_manager.add_many_to_to_crawl_queue(passed_urls)
 
             else:
                 logger.info(f"[Response] HTTP {page.status_code} @ \"{url[:60]}{'...' if len(url) > 60 else ''}\"")
