@@ -13,12 +13,14 @@ class Requester:
             "User-Agent": crawler_options.ua
         }
 
-    def get(self, url: str, *args, headers: dict | None = None, **kwargs) -> requests.Response:
+    def get(self, url: str, *args, headers: dict | None = None, is_robots: bool = False,
+            **kwargs) -> requests.Response:
         """
         Makes a GET request to the given URL but passes the base headers into the request.
         :param url: URL to make the request to.
         :param args: args for requests.get(*args)
         :param headers: Headers to append to the base headers.
+        :param is_robots: Is the request to a robots.txt file.
         :param kwargs: kwargs for requests.get(*args, **kwargs)
         :return: requests.Response object.
         """
@@ -26,7 +28,8 @@ class Requester:
         local_headers = self.base_headers.copy()
         headers = headers or dict()
         local_headers.update(headers)
-
-        request = requests.get(url, headers=headers, *args, **kwargs)
-
+        if is_robots:
+            request = requests.get(url, headers=headers, timeout=self.options.robots_timeout, *args, **kwargs)
+        else:
+            request = requests.get(url, headers=headers, *args, **kwargs)
         return request
