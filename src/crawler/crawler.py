@@ -93,7 +93,7 @@ class Crawler:
         protocol = protocol + (":" if not protocol[-1] == ":" else "")
         robots_txt_url = f"{protocol}//{domain}/robots.txt"
         logger.info(f"[Robots] Getting \"{domain}\"'s robots.txt.")
-        robots_txt_request = self.requester.get(robots_txt_url)
+        robots_txt_request = self.requester.get(robots_txt_url, is_robots=True)
 
         if robots_txt_request.status_code == 404:
             return ""
@@ -152,17 +152,28 @@ class Crawler:
             logger.info(f"[Robots.txt] Cannot crawl {logger_url_str} as it was crawled too recently.")
 
         # Get the page.
-        # TODO: Make requests get read using a stream and after they exceed X bytes cut them off.
-        request = self.requester.get(url=url)
+        request = self.requester.get(url=url, stream=True, timeout=self.options.page_timeout)
 
-        if request.content == b'':
+        content = b''
+
+        max_bytes = self.options.max_page_size
+        chunk_size = self.options.content_buffer_size
+        total_bytes = 0
+
+        for chunk in request.iter_content(chunk_size=chunk_size):
+            total_bytes += len(chunk)
+            content += chunk
+            if total_bytes >= max_bytes:
+                break
+
+        if content == b'':
             return None
 
         # Do some basic parsing.
         page = Page(
             status_code=request.status_code,
             elapsed=request.elapsed,
-            content=request.content,
+            content=content,
             response_headers=request.headers,
             url=url
         )
