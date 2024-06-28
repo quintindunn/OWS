@@ -15,9 +15,11 @@ def get_protocol_and_domain_from_url(url: str):
     if "//" not in url:
         raise InvalidURLException(f"{logger_url_str} is not a supported url.")
 
-    protocol, _url = url.split("//", 1)
+    protocol, _url = url.split("//", 1)  # https:, example.com/test
 
     if "?" in _url and "/" in _url and _url.index("?") < _url.index("/"):
+        domain = _url.split("?", 1)[0]
+    elif "?" in url and "/" not in url:
         domain = _url.split("?", 1)[0]
     elif "/" in _url:
         domain = _url.split("/", 1)[0]
