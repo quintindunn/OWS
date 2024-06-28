@@ -27,7 +27,10 @@ class BaseCrawlerOptions:
 
 
 class DefaultCrawlerOptions(BaseCrawlerOptions):
-    def __init__(self, ignored_file_extensions_path: str = "./configs/ignored_file_extensions.txt"):
+    def __init__(
+        self,
+        ignored_file_extensions_path: str = "./configs/ignored_file_extensions.txt",
+    ):
         super().__init__()
 
         self.ua: str = "OWS-CRAWLER/0.1-DEV (https://github.com/quintindunn/OWS)"

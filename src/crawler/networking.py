@@ -23,7 +23,9 @@ def _get_network_info() -> tuple[str, str]:
     for iface, addrs in psutil.net_if_addrs().items():
         for addr in addrs:
             if addr.family == socket.AF_INET:
-                network_ip = IPv4Network(f"{addr.address}/{addr.netmask}", strict=False).network_address
+                network_ip = IPv4Network(
+                    f"{addr.address}/{addr.netmask}", strict=False
+                ).network_address
                 yield network_ip, addr.netmask
 
 
