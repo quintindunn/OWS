@@ -162,3 +162,5 @@ cython_debug/
 
 src/dbs/pages.db
 to_crawl.json
+to_crawl.json.old
+launch.bat

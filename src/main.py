@@ -1,6 +1,7 @@
 import json
 import os.path
 import random
+import shutil
 
 from crawler import Crawler
 
@@ -10,7 +11,7 @@ import sys
 if __name__ == "__main__":
     logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
-    with open("seeds.txt", "r") as f:
+    with open("./seeds.txt", "r") as f:
         seeds = [i.strip() for i in f.readlines()]
 
     seed_url = random.choice(seeds)
@@ -29,5 +30,7 @@ if __name__ == "__main__":
 
     to_crawl = crawler.url_manager.to_crawl
 
-    with open("to_crawl.json", "w") as f:
+    if os.path.isfile("./to_crawl.json"):
+        shutil.move("./to_crawl.json", "./to_crawl.json.old")
+    with open("./to_crawl.json", "w") as f:
         json.dump(to_crawl, f)
