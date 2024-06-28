@@ -19,7 +19,7 @@ from .crawleroptions import BaseCrawlerOptions, DefaultCrawlerOptions  # noqa
 from .page import Page  # noqa
 from .robots import does_page_follow_robots_rules  # noqa
 from .url_checker import check_url_compliance  # noqa
-from .urls import URLManager  # noqa
+from .urls import URLManager, get_protocol_and_domain_from_url  # noqa
 
 from database import db, page_checker  # noqa (Ignore import error)
 
@@ -115,8 +115,7 @@ class Crawler:
         """
         # Perform any checks.
 
-        protocol, _url = url.split("//", 1)
-        domain = _url.split("/", 1)[0]
+        protocol, domain = get_protocol_and_domain_from_url(url)
 
         domain_model = self.get_domain(domain)
 
@@ -181,8 +180,7 @@ class Crawler:
             url = self.url_manager.get_next_url()
 
             # Check if domain is in domain table.
-            protocol, _url = url.split("//", 1)
-            domain = _url.split("/", 1)[0]
+            protocol, domain = get_protocol_and_domain_from_url(url)
 
             domain_model = (
                 self.db_session.query(db.DomainModel)

@@ -1,9 +1,31 @@
 try:
-    from .exceptions import NoUrlException, WaitBeforeRetryException
-except ImportError as e:
-    from exceptions import NoUrlException, WaitBeforeRetryException
+    from .exceptions import (
+        NoUrlException,
+        WaitBeforeRetryException,
+        InvalidURLException,
+    )
+except ImportError as _:
+    from exceptions import NoUrlException, WaitBeforeRetryException, InvalidURLException
 
 import random
+
+
+def get_protocol_and_domain_from_url(url: str):
+    logger_url_str = f"\"{url[:60]}{'...' if len(url) > 60 else ''}\""
+    if "//" not in url:
+        raise InvalidURLException(f"{logger_url_str} is not a supported url.")
+
+    protocol, _url = url.split("//", 1)  # https:, example.com/test
+
+    if "?" in _url and "/" in _url and _url.index("?") < _url.index("/"):
+        domain = _url.split("?", 1)[0]
+    elif "?" in url and "/" not in url:
+        domain = _url.split("?", 1)[0]
+    elif "/" in _url:
+        domain = _url.split("/", 1)[0]
+    else:
+        domain = _url
+    return protocol, domain
 
 
 class URLManager:
@@ -24,8 +46,7 @@ class URLManager:
         if to_crawl:
             self.to_crawl = to_crawl
         else:
-            protocol, _url = seed_url.split("//", 1)
-            domain = _url.split("/", 1)[0]
+            _, domain = get_protocol_and_domain_from_url(seed_url)
             self.to_crawl[domain] = [seed_url]
 
     def get_next_url(self) -> str:
@@ -36,7 +57,6 @@ class URLManager:
         # Check that we haven't crawled everything.
         if len(self.to_crawl) == 0:
             raise NoUrlException()
-
         domain_choice = random.choice(list(self.to_crawl.keys()))
         current_url = random.choice(self.to_crawl[domain_choice])
 
@@ -49,12 +69,17 @@ class URLManager:
             raise NoUrlException()
 
         self.enqueued.add(current_url)
+
         return current_url
 
     def add_to_to_crawl_queue(self, url: str, domain: str | None = None):
+        if not url.lower().startswith("http://") and not url.lower().startswith(
+            "https://"
+        ):
+            return
+
         if domain is None:
-            _url = url.split("//", 1)[1]
-            domain = _url.split("/", 1)[0]
+            _, domain = get_protocol_and_domain_from_url(url)
 
         if domain in self.to_crawl.keys():
             self.to_crawl[domain].append(url)

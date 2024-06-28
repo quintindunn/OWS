@@ -69,7 +69,6 @@ https://aka.ms
 https://developer.microsoft.com
 https://learn.microsoft.com
 https://support.microsoft.com
-https://www.onenote.com
 https://azure.microsoft.com
 https://techcommunity.microsoft.com
 https://azuremarketplace.microsoft.com
@@ -114,7 +113,6 @@ https://jobs.opera.com
 https://support.scribd.com
 https://breezy-gallery.imgix.net
 https://auth.opera.com
-https://www.google.com
 https://refit.sourceforge.net
 https://github.blog
 https://psychcentral.com
@@ -126,7 +124,6 @@ https://phandroid.com
 https://www.ip-adress.com
 https://www.textbroker.de
 https://scholar.google.com
-https://olduli.nli.org.il
 https://codeql.com
 https://itc.ua
 https://www.ynet.co.il
@@ -157,7 +154,6 @@ https://partners.elastic.co
 https://portal.acm.org
 https://www.aljazeera.com
 https://www.ebizmba.com
-https://login.elastic.co
 https://cloud.elastic.co
 https://techcrunch.com
 https://bambots.brucemyers.com
@@ -166,3 +162,4 @@ https://bible.oremus.org
 https://loc.gov
 https://www.txnd.uscourts.gov
 https://www.yelp.com
+https://fbi.gov
