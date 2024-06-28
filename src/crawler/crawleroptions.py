@@ -27,11 +27,11 @@ class BaseCrawlerOptions:
 
 
 class DefaultCrawlerOptions(BaseCrawlerOptions):
-    def __init__(self):
+    def __init__(self, ignored_file_extensions_path: str = "./configs/ignored_file_extensions.txt"):
         super().__init__()
 
         self.ua: str = "OWS-CRAWLER/0.1-DEV (https://github.com/quintindunn/OWS)"
 
-        with open("./configs/ignored_file_extensions.txt", "r") as f:
+        with open(ignored_file_extensions_path, "r") as f:
             extensions = f.readlines()[1:]
         self.ignored_url_endings = set(extensions)
