@@ -1,3 +1,5 @@
+import os.path
+import shutil
 from unittest import TestCase
 
 import sys

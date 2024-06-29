@@ -163,6 +163,8 @@ cython_debug/
 src/dbs/pages.db-journal
 src/dbs/pages.db
 
+src/tests/dbs/
+
 to_crawl.json
 to_crawl.json.old
 launch.bat
