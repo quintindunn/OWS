@@ -70,5 +70,9 @@ def is_host_private(host: str) -> bool:
     :param host: Host to check
     :return: True if the host resolves to a private ip address.
     """
+
+    if "[" in host or "]" in host:
+        return True
+
     ip = _resolve_domain_to_ip(host)
     return _is_ip_private(ip)

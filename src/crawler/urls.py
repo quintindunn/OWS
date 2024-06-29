@@ -8,6 +8,7 @@ except ImportError as _:
     from exceptions import NoUrlException, WaitBeforeRetryException, InvalidURLException
 
 import random
+import re
 
 
 def get_protocol_and_domain_from_url(url: str):
@@ -17,14 +18,7 @@ def get_protocol_and_domain_from_url(url: str):
 
     protocol, _url = url.split("//", 1)  # https:, example.com/test
 
-    if "?" in _url and "/" in _url and _url.index("?") < _url.index("/"):
-        domain = _url.split("?", 1)[0]
-    elif "?" in url and "/" not in url:
-        domain = _url.split("?", 1)[0]
-    elif "/" in _url:
-        domain = _url.split("/", 1)[0]
-    else:
-        domain = _url
+    domain = re.split(r'[?/#]', _url, maxsplit=1)[0]
     return protocol, domain
 
 
