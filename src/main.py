@@ -48,7 +48,7 @@ def load_data():
 
 
 LIVE = True
-INSTANCE_COUNT = 1
+INSTANCE_COUNT = 10
 instances = []
 
 
