@@ -60,13 +60,11 @@ if __name__ == "__main__":
     seeds, to_crawl = load_data()
     seed_url = random.choice(seeds)
 
-    url_manager = URLManager(
-        seed_url=seed_url, crawled=None, to_crawl=to_crawl
-    )
+    url_manager = URLManager(seed_url=seed_url, crawled=None, to_crawl=to_crawl)
 
     # If instance count > 1 multithreading will be used.
     if INSTANCE_COUNT > 1:
-        for instance in range(1, INSTANCE_COUNT+1):
+        for instance in range(1, INSTANCE_COUNT + 1):
             logger.info(f"Starting crawler instance #{instance}")
             launch_instance(url_man=url_manager)
 

@@ -18,7 +18,7 @@ def get_protocol_and_domain_from_url(url: str):
 
     protocol, _url = url.split("//", 1)  # https:, example.com/test
 
-    domain = re.split(r'[?/#]', _url, maxsplit=1)[0]
+    domain = re.split(r"[?/#]", _url, maxsplit=1)[0]
     return protocol, domain
 
 

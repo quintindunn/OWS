@@ -27,7 +27,7 @@ class TestURLs(TestCase):
             "http://example.com/path;param?query#fragment": ["http:", "example.com"],
             "https://example.com#fragment": ["https:", "example.com"],
             "http://192.168.0.1/path": ["http:", "192.168.0.1"],
-            "http://[::1]/path": ["http:", "[::1]"]
+            "http://[::1]/path": ["http:", "[::1]"],
         }
 
         for url, expected in urls.items():
