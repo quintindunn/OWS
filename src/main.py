@@ -21,12 +21,12 @@ def run_instance(url_man: URLManager):
 
 
 def launch_instance(url_man: URLManager):
-    thread = Thread(target=run_instance, kwargs={"url_man": url_man}, daemon=False)
+    thread = Thread(target=run_instance, kwargs={"url_man": url_man}, daemon=True)
     thread.start()
 
 
 def dump_to_crawl(url_man: URLManager):
-    _to_crawl = url_man.to_crawl
+    _to_crawl = url_man.to_crawl.copy()
 
     if os.path.isfile("./to_crawl.json"):
         shutil.move("./to_crawl.json", "./to_crawl.json.old")
@@ -48,7 +48,7 @@ def load_data():
 
 
 LIVE = True
-INSTANCE_COUNT = 10
+INSTANCE_COUNT = int(sys.argv[1]) if len(sys.argv) == 2 else 2
 instances = []
 
 
