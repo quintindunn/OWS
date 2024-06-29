@@ -35,9 +35,7 @@ logger = logging.getLogger("Crawler")
 class Crawler:
     def __init__(
         self,
-        seed_url: str,
-        crawled: set[str] | None = None,
-        to_crawl: dict[str, list[str]] | None = None,
+        url_manager: URLManager,
         crawler_options: BaseCrawlerOptions | None = None,
     ):
         """
@@ -52,9 +50,7 @@ class Crawler:
         self.stats = CrawlerStats()
         self.requester = Requester(crawler_options=self.options)
 
-        self.url_manager = URLManager(
-            seed_url=seed_url, crawled=crawled, to_crawl=to_crawl
-        )
+        self.url_manager = url_manager
 
         self.current_url: str | None = None
 
