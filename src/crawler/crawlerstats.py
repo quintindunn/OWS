@@ -11,7 +11,6 @@ class CrawlerStats:
         self.pages_ok: int = 0
 
         self.total_crawl_time: int = 0
-        self.domains: list[str] = []
 
     @property
     def average_crawl_time(self) -> float:
