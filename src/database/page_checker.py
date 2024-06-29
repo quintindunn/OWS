@@ -19,6 +19,8 @@ def page_follows_db_rules(crawler_options: BaseCrawlerOptions, page: Page):
 
     if crawler_options.check_content_type:
         content_type = headers.get("content-type")
-        if content_type and "text/html" not in content_type:
-            return False
-        return True
+        for accepted_content_type in crawler_options.accepted_content_types:
+            if content_type and accepted_content_type not in content_type:
+                return False
+
+    return True

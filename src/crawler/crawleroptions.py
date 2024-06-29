@@ -15,6 +15,7 @@ class BaseCrawlerOptions:
 
         # Check the content-type from the response headers
         self.check_content_type: bool = True
+        self.accepted_content_types: list[str] = ["text/html", "text/xml"]
 
         # Max page content size
         self.max_page_size = 1.5e7  # 15 mb.
